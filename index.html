@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="stylesheet" href="style/styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wix Price CSV Editor</title>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+</head>
+<body>
+
+  <h1>Wix Product CSV Editor</h1>
+  <h3>Simplify adding prices to each product variant</h3>
+
+  <!-- Drop zone -->
+  <div id="drop-zone">
+    Choose File or Drag and Drop
+  </div>
+
+  <!-- File input -->
+  <input type="file" id="fileInput" accept=".csv"/>
+
+  <!-- Text input field -->
+  <!--input type="text" id="textInput" placeholder="Enter some text here" /-->
+
+  <!-- Pricing info table grid -->
+  <div id="price-grid-header">
+    <h3 id="product-name" class="hidden">Temp Product Name</h3>
+    <button id="export-button" class="hidden">Export New CSV</button>
+  </div>
+
+  <div class="price-string-container hidden">
+    <p>(Optional) Enter comma-separated price string for all variant options.</p>
+    <div class="price-string-input-container">
+      <input type="text" id="price-string-input" placeholder="0,0,0,0"/>
+      <button id="enter-price-string-button">Enter</button>
+      <button id="reset-button">Reset Table</button>
+    </div>
+  </div>
+
+  <div id="price-grid" class="hidden"></div>
+
+  <script src="scripts/main.js"></script>
+</body>
+</html>

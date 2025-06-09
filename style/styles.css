@@ -1,0 +1,69 @@
+body {
+  font-family: Arial, sans-serif;
+  padding: 20px;
+}
+
+#drop-zone {
+  border: 2px dashed #aaa;
+  border-radius: 10px;
+  padding: 30px;
+  text-align: center;
+  margin: 40px 0px;
+  color: #555;
+  cursor: pointer;
+}
+
+#drop-zone.hover {
+  background-color: #f0f8ff;
+  border-color: #3399ff;
+}
+
+input[type="file"] {
+  margin-bottom: 10px;
+}
+
+input[type="text"] {
+  display: block;
+  margin-bottom: 25px;
+  width: 50%;
+  padding: 8px;
+  font-size: 16px;
+}
+
+button {
+  background-color: #e0dcd1;
+  height: 30%;
+  font-size: 16px;
+  padding: 8px;
+  cursor: pointer;
+}
+
+#price-grid-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.price-string-input-container {
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+
+#price-grid {
+  display: flex;
+  border: 1px solid grey;
+}
+
+.option-container {
+  border-right: 1px solid grey;
+  margin: 5px;
+}
+
+/*.option-choice-container {
+  height: 100px;
+}*/
+
+.hidden {
+  display: none;
+}
