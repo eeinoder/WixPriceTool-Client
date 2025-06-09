@@ -42,12 +42,17 @@ button {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  border-bottom: 1px solid grey;
 }
 
 .price-string-input-container {
   display: flex;
   justify-content: flex-start;
   align-items: flex-start;
+}
+
+#price-string-input {
+  width: calc(100% - 183px);
 }
 
 #price-grid {

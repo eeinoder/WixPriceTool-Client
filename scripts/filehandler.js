@@ -53,7 +53,7 @@ $(document).ready(function () {
     const files = fileInput.files;
     if (files.length > 0) {
       // Update drop zone text
-      dropZone.innerHTML = `${files[0].name}`;
+      dropZone.innerHTML = `File Uploaded: ${files[0].name}`;
       // Parse CSV file
       parseCSVtoJSON(files[0]);
     }
@@ -82,7 +82,9 @@ function buildPriceInputTable(resultData) {
 
   // Product Name
   let prodName = resultData[1][2];
-  //console.log(prodName);
+
+  // Reset optionPriceMap
+  optionPriceMap = {};
 
   for (var i=1; i<=maxOptions; i++) {
     let currProdOptionNum = `productOptionName${i}`;
@@ -138,6 +140,7 @@ function buildPriceInputTable(resultData) {
     // Instantiate option containers, each column
     let optionContainerDiv = document.createElement("div");
     optionContainerDiv.classList.add("option-container");
+    optionContainerDiv.style.width = `${(100/numCols)}%`
     let optionTitleDiv = document.createElement("h4");
     optionTitleDiv.innerHTML = optionName;
     optionContainerDiv.appendChild(optionTitleDiv);
