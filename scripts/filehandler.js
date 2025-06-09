@@ -46,8 +46,13 @@ $(document).ready(function () {
   };
 
   dropZone.onclick = (e) => {
-    fileInput.dispatchEvent(new Event('click', { bubbles: true }));
+    console.log("DROP ZONE CLICKED")
+    fileInput.dispatchEvent(new MouseEvent('click', { bubbles: true }));
   };
+
+  fileInput.onclick = (e) => {
+    console.log("FILE INPUT CLICKED")
+  }
 
   fileInput.onchange = (e) => {
     const files = fileInput.files;
@@ -140,7 +145,7 @@ function buildPriceInputTable(resultData) {
     // Instantiate option containers, each column
     let optionContainerDiv = document.createElement("div");
     optionContainerDiv.classList.add("option-container");
-    optionContainerDiv.style.width = `${(100/numCols)}%`
+    //optionContainerDiv.style.width = `max(200px, ${(100/numCols)}%)`
     let optionTitleDiv = document.createElement("h4");
     optionTitleDiv.innerHTML = optionName;
     optionContainerDiv.appendChild(optionTitleDiv);
@@ -174,6 +179,12 @@ function buildPriceInputTable(resultData) {
   resetButton.onclick = (e) => {
     resetPriceGrid();
   }
+
+  // Initilize grid size. Add resize event listener
+  resizeGrid();
+  document.body.onresize = (e) => {
+    resizeGrid();
+  };
 }
 
 function isValidPrice(valueStr) {
@@ -302,7 +313,7 @@ function exportFileHandler(e) {
   else {
     csvURL = window.URL.createObjectURL(csvData);
   }
-
+  // Create temp link, simulate click to download
   var tempLink = document.createElement('a');
   tempLink.href = csvURL;
   tempLink.setAttribute('download', 'download.csv');
@@ -323,6 +334,23 @@ function exportFileHandler(e) {
     }
   });*/
 
+}
+
+function resizeGrid() {
+  let optionContainerDivs = document.querySelectorAll(".option-container");
+  let priceGrid = document.querySelector("#price-grid");
+  let gridWidth = priceGrid.getBoundingClientRect().width;
+  let numCols = Object.entries(optionPriceMap).length;
+  let minColSize = 200; // pixels
+  console.log(gridWidth)
+  console.log(minColSize)
+  console.log(gridWidth / minColSize)
+  // Set column width as fraction of grid width such that
+  let maxColsPerRow = Math.max(1, Math.min(numCols, Math.floor(gridWidth / minColSize)));
+  optionContainerDivs.forEach(div => {
+    div.style.width = `calc(${(100/maxColsPerRow)}% - ${12}px)`
+    //div.style.width = `${(92/maxColsPerRow)}%`
+  });
 }
 
 

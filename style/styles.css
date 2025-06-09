@@ -57,11 +57,13 @@ button {
 
 #price-grid {
   display: flex;
+  flex-wrap: wrap;
   border: 1px solid grey;
 }
 
 .option-container {
   border-right: 1px solid grey;
+  border-bottom: 1px solid grey;
   margin: 5px;
 }
 
