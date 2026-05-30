@@ -7,7 +7,9 @@ let optionPriceMap = {
   "Option1Name" : {
     index: ,
     optionChoices: [...],
-    optionChoicesPriceMap: {"optionChoice1Name":price, ...},
+    optionChoicesPriceMapInitial: {"optionChoice1Name":initialPrice, ...},
+    optionChoicesPriceMapInputs: {"optionChoice1Name":price, ...},
+    defaultOptionChoice: "zeroPriceOptionChoice",
   },
   "Option2Name"
   */
@@ -46,12 +48,12 @@ $(document).ready(function () {
   };
 
   dropZone.onclick = (e) => {
-    console.log("DROP ZONE CLICKED")
+    //console.log("DROP ZONE CLICKED")
     fileInput.dispatchEvent(new MouseEvent('click', { bubbles: true }));
   };
 
   fileInput.onclick = (e) => {
-    console.log("FILE INPUT CLICKED")
+    //console.log("FILE INPUT CLICKED")
   }
 
   fileInput.onchange = (e) => {
@@ -88,9 +90,26 @@ function buildPriceInputTable(resultData) {
   // Product Name
   let prodName = resultData[1][2];
 
+  // Product base price
+  // let prodBasePrice = resultData[1][8];
+  // TODO: this column refernce may be changed by wix.
+  // Should find value based on column name 'price'
+
   // Reset optionPriceMap
   optionPriceMap = {};
 
+  // Find default initial option choices (zero price)
+  let surchargeColIndex = headerRow.indexOf('surcharge');
+  let defaultOptionsPriceRow = 0;
+
+  for (var row=2; row<resultData.length; row++) {
+    let totalOptionsPrice = resultData[row][surchargeColIndex];
+    if (totalOptionsPrice === 0 || totalOptionsPrice === '') {
+      defaultOptionsPriceRow = row;
+    }
+  }
+
+  // Instantiate optionPriceMap entry
   for (var i=1; i<=maxOptions; i++) {
     let currProdOptionNum = `productOptionName${i}`;
     let currIndex = headerRow.indexOf(currProdOptionNum);
@@ -99,21 +118,63 @@ function buildPriceInputTable(resultData) {
       // Split option choice into array
       let optionChoices = resultData[1][currIndex+2];
       let optionChoicesArr = resultData[1][currIndex+2].split(";");
-      let optionChoicesPriceMap = {};
+      let optionChoicesPriceMapInputs = {};
+      let optionChoicesPriceMapInitial = {};
       optionChoicesArr.forEach(optionChoice => {
-        optionChoicesPriceMap[optionChoice] = 0;
-      }); // TODO: find/calculate current prices and store them in map
-      // Instantiate optionPriceMap entry
+        optionChoicesPriceMapInputs[optionChoice] = 0;
+        optionChoicesPriceMapInitial[optionChoice] = 0;
+      });
+
       optionPriceMap[currProdOptionName] = {
         index: currIndex,
         optionChoices: optionChoicesArr,
-        optionChoicesPriceMap: optionChoicesPriceMap,
+        optionChoicesPriceMapInitial: optionChoicesPriceMapInitial,
+        optionChoicesPriceMapInputs: optionChoicesPriceMapInputs,
+        defaultOptionChoice: resultData[defaultOptionsPriceRow][currIndex+2],
       };
     }
     else {
       break;
     }
   }
+
+  // Calculate initial option choice prices
+  // Iterate over all option categories
+  for (const optionName of Object.keys(optionPriceMap)) {
+    // Iterate over option choices. For non-default (nonzero price) choice,
+    // find totalOptionPrice where other option categories are default choice
+    // (i.e. isolate option choice price)
+    optionPriceMap[optionName].optionChoices.forEach(optionChoice => {
+      if (optionChoice !== optionPriceMap[optionName].defaultOptionChoice) {
+        // Scan all price rows to find match
+        for (var priceRow=2; priceRow<resultData.length; priceRow++) {
+          let currOptionChoice = resultData[priceRow][optionPriceMap[optionName].index+2];
+          if (optionChoice === currOptionChoice && priceRow !== defaultOptionsPriceRow) {
+            let totalOptionsPrice = resultData[priceRow][surchargeColIndex];
+            if (isOtherOptionChoicesZero(optionName, priceRow)) {
+              optionPriceMap[optionName].optionChoicesPriceMapInitial[optionChoice] = totalOptionsPrice;
+              break;
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // Helper function to find price row where current option choice is only
+  // nonzero price.
+  function isOtherOptionChoicesZero(currOptionName, currPriceRow) {
+    for (const optionName of Object.keys(optionPriceMap)) {
+      if (optionName !== currOptionName) {
+        let currOptionChoice = resultData[currPriceRow][optionPriceMap[optionName].index+2];
+        if (currOptionChoice !== optionPriceMap[optionName].defaultOptionChoice) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
 
   let priceGridHeader = document.querySelector("#price-grid-header");
   let productName = document.querySelector("#product-name");
@@ -159,6 +220,8 @@ function buildPriceInputTable(resultData) {
       let optionChoiceInput = document.createElement('input');
       optionChoiceInput.setAttribute('type', 'text');
       optionChoiceInput.setAttribute('placeholder', '0.00');
+      let initialPrice = optionPriceMap[optionName].optionChoicesPriceMapInitial[optionChoice]
+      optionChoiceInput.value = initialPrice;
       optionChoiceInput.id = `priceInput_${optionName}_${optionChoice}`;
       optionChoiceInput.oninput = (e) => {
         validatePriceInput(e, optionChoiceInput);
@@ -217,12 +280,12 @@ function processPriceString(e, priceStringInput) {
     alert(`Invalid prices: ${invalidPrices}`)
   }
   else {
-    populatePriceInputs(priceArray);
+    populatePricesFromPriceString(priceArray);
   }
 }
 
 // Populate all price inputs from optional price string input
-function populatePriceInputs(priceArr) {
+function populatePricesFromPriceString(priceArr) {
   let inputs = document.querySelectorAll('input');
   let priceIter = 0;
   inputs.forEach(input => {
@@ -234,7 +297,27 @@ function populatePriceInputs(priceArr) {
   });
 }
 
+// Populate all price inputs from initial pricing data from CSV
+// Input field ID schema:
+// optionChoiceInput.id = `priceInput_${optionName}_${optionChoice}`;
+function populatePricesFromInitialCSV() {
+  // Iterate over all input fields in price grid
+  let inputs = document.querySelectorAll('input');
+  inputs.forEach(input => {
+    let idComponents = input.id.split("_");
+    if (idComponents[0] === "priceInput") {
+      let optionName = idComponents[1];
+      let optionChoice = idComponents[2];
+      input.value = optionPriceMap[optionName].optionChoicesPriceMapInitial[optionChoice];
+    }
+  });
+}
+
 function resetPriceGrid() {
+  populatePricesFromInitialCSV();
+}
+
+function resetPriceGridToZero() {
   let inputs = document.querySelectorAll('input');
   inputs.forEach(input => {
     let idComponents = input.id.split("_");
@@ -267,7 +350,7 @@ function exportFileHandler(e) {
       let optionChoiceName = idComponents[2];
       let optionChoicePrice = input.value;
       // Update optionPriceMap
-      optionPriceMap[optionName].optionChoicesPriceMap[optionChoiceName] = optionChoicePrice;
+      optionPriceMap[optionName].optionChoicesPriceMapInputs[optionChoiceName] = optionChoicePrice;
     }
   });
 
@@ -278,6 +361,8 @@ function exportFileHandler(e) {
     numVariants = numVariants * optionPriceMap[optionName]["optionChoices"].length;
   }
 
+// TODO: if manual pricing not enabled, CSV will be single row and below will
+// not work -> check resultJSON has rows for all variants and ALERT if not
   for (var i=0; i<numVariants; i++) {
     let variantRow = i+2;
     // Calculate Price Sum, iterate over options and variant choices
@@ -285,7 +370,7 @@ function exportFileHandler(e) {
     for (const optionName of Object.keys(optionPriceMap)) {
       let optionIndex = optionPriceMap[optionName].index;
       let selectedChoice = resultJSON.data[variantRow][optionIndex+2];
-      let choicePrice = optionPriceMap[optionName].optionChoicesPriceMap[selectedChoice];
+      let choicePrice = optionPriceMap[optionName].optionChoicesPriceMapInputs[selectedChoice];
       if (choicePrice) {
         priceSum += parseFloat(choicePrice);
       }
@@ -315,8 +400,10 @@ function exportFileHandler(e) {
   }
   // Create temp link, simulate click to download
   var tempLink = document.createElement('a');
+  let prodName = resultJSON.data[1][2];
+  let linkName = (prodName + '_download.csv').replaceAll(" ", "");
   tempLink.href = csvURL;
-  tempLink.setAttribute('download', 'download.csv');
+  tempLink.setAttribute('download', linkName);
   tempLink.click();
 
   /*Papa.unparse(resultJSON.data, {
@@ -342,9 +429,9 @@ function resizeGrid() {
   let gridWidth = priceGrid.getBoundingClientRect().width;
   let numCols = Object.entries(optionPriceMap).length;
   let minColSize = 200; // pixels
-  console.log(gridWidth)
-  console.log(minColSize)
-  console.log(gridWidth / minColSize)
+  //console.log(gridWidth)
+  //console.log(minColSize)
+  //console.log(gridWidth / minColSize)
   // Set column width as fraction of grid width such that
   let maxColsPerRow = Math.max(1, Math.min(numCols, Math.floor(gridWidth / minColSize)));
   optionContainerDivs.forEach(div => {
